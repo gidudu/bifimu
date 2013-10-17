@@ -1,0 +1,66 @@
+#!/usr/bin/python
+#remember: open up a new file stream every time
+import os, sys, time, socket, thread
+header = '~*~___---fmirror---___~*~'
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+fp = open(sys.argv[2], 'r+')
+fp.seek(0,0)
+fc = 'fail!'
+try:
+	sys.argv[3]
+except IndexError:
+	bedtime = 10
+else:
+	bedtime = int(sys.argv[3])
+if sys.argv[1] == '-l':
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', 5068))
+	s.listen(5)
+	c, caddr = s.accept()
+	try:
+		while True:
+			fp.seek(0,0)
+			print 'sucked'
+			fc = c.recv(1073741824)
+			print fc
+			fp.truncate()
+			fp.seek(0,0)
+			fp.write(fc)
+			print 'writted'
+			fp.seek(0,0)
+			print 'seeked'
+			time.sleep(bedtime)
+			fp = open(sys.argv[2], 'r+')
+			fp.seek(0,0)
+			fim = fp.read()
+			c.send(fim)
+	except:
+		fp.truncate()
+		fp.write(fc)
+		exit()
+else:
+	s.connect((socket.gethostbyname(sys.argv[1]), 5068))
+	try:
+		while True:
+			fp = open(sys.argv[2], 'r+')
+			fp.seek(0,0)
+			s.send(fp.read())
+			print 'read and sent'
+			fp.seek(0,0)
+			print fp.read()
+			fp.seek(0,0)
+			print 'suxed'
+			fp.truncate()
+			print 'truncaited'
+			fp.seek(0,0)
+			print 'seeked'
+			fc = s.recv(1073741824)
+			print 'recieeved'
+			fp.write(fc)
+			print fc + '\n---\n'
+			fp.seek(0,0)
+			time.sleep(bedtime)
+	except:
+		fp.truncate()
+		fp.write(fc)
+		exit()
