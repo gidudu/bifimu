@@ -9,10 +9,14 @@ fc = 'fail!'
 try:
 	sys.argv[3]
 except IndexError:
+	#arg3 = False
 	bedtime = 10
 else:
+	#arg3 = True
 	bedtime = int(sys.argv[3])
 if sys.argv[1] == '-l':
+	#if arg3 == True:
+	#	code ==
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.bind(('', 5068))
 	s.listen(5)
@@ -20,15 +24,12 @@ if sys.argv[1] == '-l':
 	try:
 		while True:
 			fp.seek(0,0)
-			print 'sucked'
 			fc = c.recv(1073741824)
 			print fc
 			fp.truncate()
 			fp.seek(0,0)
 			fp.write(fc)
-			print 'writted'
 			fp.seek(0,0)
-			print 'seeked'
 			time.sleep(bedtime)
 			fp = open(sys.argv[2], 'r+')
 			fp.seek(0,0)
@@ -45,19 +46,13 @@ else:
 			fp = open(sys.argv[2], 'r+')
 			fp.seek(0,0)
 			s.send(fp.read())
-			print 'read and sent'
 			fp.seek(0,0)
 			print fp.read()
 			fp.seek(0,0)
-			print 'suxed'
 			fp.truncate()
-			print 'truncaited'
 			fp.seek(0,0)
-			print 'seeked'
 			fc = s.recv(1073741824)
-			print 'recieeved'
 			fp.write(fc)
-			print fc + '\n---\n'
 			fp.seek(0,0)
 			time.sleep(bedtime)
 	except:
