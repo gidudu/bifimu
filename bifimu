@@ -1,22 +1,16 @@
 #!/usr/bin/python
 #remember: open up a new file stream every time
 import os, sys, time, socket, thread
-header = '~*~___---fmirror---___~*~'
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 fp = open(sys.argv[2], 'r+')
 fp.seek(0,0)
-fc = 'fail!'
 try:
 	sys.argv[3]
 except IndexError:
-	#arg3 = False
-	bedtime = 10
+	bedtime = 5
 else:
-	#arg3 = True
 	bedtime = int(sys.argv[3])
 if sys.argv[1] == '-l':
-	#if arg3 == True:
-	#	code ==
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.bind(('', 5068))
 	s.listen(5)
@@ -25,7 +19,6 @@ if sys.argv[1] == '-l':
 		while True:
 			fp.seek(0,0)
 			fc = c.recv(1073741824)
-			print fc
 			fp.truncate()
 			fp.seek(0,0)
 			fp.write(fc)
@@ -47,11 +40,9 @@ else:
 			fp.seek(0,0)
 			s.send(fp.read())
 			fp.seek(0,0)
-			print fp.read()
-			fp.seek(0,0)
+			fc = s.recv(1073741824)
 			fp.truncate()
 			fp.seek(0,0)
-			fc = s.recv(1073741824)
 			fp.write(fc)
 			fp.seek(0,0)
 			time.sleep(bedtime)
