@@ -29,7 +29,11 @@ if sys.argv[1] == '-l':
 			fim = fp.read()
 			c.send(fim)
 	except:
+		print fc
+		c.close()
+		s.close()
 		fp.truncate()
+		fp.seek(0,0)
 		fp.write(fc)
 		exit()
 else:
@@ -47,6 +51,9 @@ else:
 			fp.seek(0,0)
 			time.sleep(bedtime)
 	except:
+		s.close()
 		fp.truncate()
+		fp.seek(0,0)
 		fp.write(fc)
+		print fc
 		exit()
