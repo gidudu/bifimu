@@ -11,10 +11,17 @@ except IndexError:
 else:
 	bedtime = int(sys.argv[3])
 if sys.argv[1] == '-l':
+	pwd = raw_input("Please enter your desired password: ");
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.bind(('', 5068))
 	s.listen(5)
 	c, caddr = s.accept()
+	cpass = c.recv(16)
+	if cpass != pwd:
+		c.send("errpass")
+		c.close(); s.close()
+		exit()
+	else: c.send("OK")
 	try:
 		while True:
 			fp.seek(0,0)
@@ -37,7 +44,13 @@ if sys.argv[1] == '-l':
 		fp.write(fc)
 		exit()
 else:
+	pwd = raw_input("Password: ")
 	s.connect((socket.gethostbyname(sys.argv[1]), 5068))
+	s.send(pwd)
+	if s.recv(8) == 'errpass':
+		s.close()
+		print "Error: incorrect password."
+		exit()
 	try:
 		while True:
 			fp = open(sys.argv[2], 'r+')
