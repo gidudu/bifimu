@@ -1,72 +1,76 @@
 #!/usr/bin/python
 #remember: open up a new file stream every time
-import os, sys, time, socket, thread
+import os, sys, time, socket, thread, argparse
+parser = argparse.ArgumentParser(description='bifimu is a bidirectional file mirroring utility. It allows two files to be synchronized between different computers.')
+parser.add_argument('server', metavar='server', type=str,
+                   help='connect to <server> for peer') # need to update help
+parser.add_argument('file', metavar='file', type=int,
+                   help='file path') # need to update help
+parser.add_argument('bedtime', metavar='bedtime', type=int, default=5,
+                   help='bedtime value') # need to update help
+
+args = parser.parse_args()
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 fp = open(sys.argv[2], 'r+')
 fp.seek(0,0)
-try:
-	sys.argv[3]
-except IndexError:
-	bedtime = 5
-else:
-	bedtime = int(sys.argv[3])
+bedtime = args.accumulate(args.bedtime)
 if sys.argv[1] == '-l':
-	pwd = raw_input("Please enter your desired password: ");
-	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.bind(('', 5068))
-	s.listen(5)
-	c, caddr = s.accept()
-	cpass = c.recv(16)
-	if cpass != pwd:
-		c.send("errpass")
-		c.close(); s.close()
-		exit()
-	else: c.send("OK")
-	try:
-		while True:
-			fp.seek(0,0)
-			fc = c.recv(1073741824)
-			fp.truncate()
-			fp.seek(0,0)
-			fp.write(fc)
-			fp.seek(0,0)
-			time.sleep(bedtime)
-			fp = open(sys.argv[2], 'r+')
-			fp.seek(0,0)
-			fim = fp.read()
-			c.send(fim)
-	except:
-		print fc
-		c.close()
-		s.close()
-		fp.truncate()
-		fp.seek(0,0)
-		fp.write(fc)
-		exit()
+        pwd = raw_input("Please enter your desired password: ");
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('', 5068))
+        s.listen(5)
+        c, caddr = s.accept()
+        cpass = c.recv(16)
+        if cpass != pwd:
+                c.send("errpass")
+                c.close(); s.close()
+                exit()
+        else: c.send("OK")
+        try:
+                while True:
+                        fp.seek(0,0)
+                        fc = c.recv(1073741824)
+                        fp.truncate()
+                        fp.seek(0,0)
+                        fp.write(fc)
+                        fp.seek(0,0)
+                        time.sleep(bedtime)
+                        fp = open(sys.argv[2], 'r+')
+                        fp.seek(0,0)
+                        fim = fp.read()
+                        c.send(fim)
+        except:
+                print fc
+                c.close()
+                s.close()
+                fp.truncate()
+                fp.seek(0,0)
+                fp.write(fc)
+                exit()
 else:
-	pwd = raw_input("Password: ")
-	s.connect((socket.gethostbyname(sys.argv[1]), 5068))
-	s.send(pwd)
-	if s.recv(8) == 'errpass':
-		s.close()
-		print "Error: incorrect password."
-		exit()
-	try:
-		while True:
-			fp = open(sys.argv[2], 'r+')
-			fp.seek(0,0)
-			s.send(fp.read())
-			fp.seek(0,0)
-			fc = s.recv(1073741824)
-			fp.truncate()
-			fp.seek(0,0)
-			fp.write(fc)
-			fp.seek(0,0)
-			time.sleep(bedtime)
-	except:
-		s.close()
-		fp.truncate()
-		fp.seek(0,0)
-		fp.write(fc)
-		print fc
-		exit()
+        pwd = raw_input("Password: ")
+        s.connect((socket.gethostbyname(args.accumulate(args.server), 5068)))
+        s.send(pwd)
+        if s.recv(8) == 'errpass':
+                s.close()
+                print "Error: incorrect password."
+                exit()
+        try:
+                while True:
+                        fp = open(sys.argv[2], 'r+')
+                        fp.seek(0,0)
+                        s.send(fp.read())
+                        fp.seek(0,0)
+                        fc = s.recv(1073741824)
+                        fp.truncate()
+                        fp.seek(0,0)
+                        fp.write(fc)
+                        fp.seek(0,0)
+                        time.sleep(bedtime)
+        except:
+                s.close()
+                fp.truncate()
+                fp.seek(0,0)
+                fp.write(fc)
+                print fc
+                exit()
