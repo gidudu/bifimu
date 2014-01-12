@@ -1,0 +1,161 @@
+#!/usr/bin/python
+import os, sys, time, socket, rsa, rsa.bigfile
+#NOTE: This version of bifimu requires the non-standard "rsa" module.
+cfc = 0
+header = '\1\1\2\5--~~BIFIMU~~header--bifimu~~HEADER~~\5\2\1\1'
+fp_arr = []     #file pointer array
+fn_arr = sys.argv[3:]   #file name array
+fc_arr = []     #file contents array
+enc_keys = rsa.newkeys(512)
+BEDTIME = int(sys.argv[2])
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+for i in fn_arr: fp_arr.append(open(i, 'r+'))
+if sys.argv[1] == '-l':
+	pwd = raw_input("Please enter your desired password: ");
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', 5068))
+	s.listen(5)
+	c, caddr = s.accept()
+	cpass = c.recv(64)
+	if cpass != pwd:
+		c.send("err")
+		c.close(); s.close()
+		exit()
+	else: c.send("ack")
+	c.send(str(enc_keys[0].n) + 's' + str(enc_keys[0].e) + header)
+	o_pub = c.recv(256)
+	o_pub = rsa.PublicKey(int(o_pub.split(header)[-2].split('s')[0]), int(o_pub.split(header)[-2].split('s')[1]))
+	try:
+		while True:
+			cfc = 0
+			for fp in fp_arr:
+				fc = c.recv(2147483647/2)#Yowza, am I right?
+				fl = fc.split(header)[-2]
+				fpl = len(fl)
+				if fpl > 64:
+					dfp = open('.d' + str(cfc), 'w+')
+					dfp.write(fl)
+					dfp.seek(0)
+					rsa.bigfile.decrypt_bigfile(dfp, fp, enc_keys[1])
+					fp.seek(0)
+					if cfc > len(fc_arr) - 1: fc_arr.append(fp.read())
+					else: fc_arr[cfc] = fp.read()
+					fp.seek(0)
+					dfp.close()
+					os.remove('.d' + str(cfc))
+				else:
+					fp.truncate()
+					if cfc > len(fc_arr) - 1: fc_arr.append(rsa.decrypt(fl, enc_keys[1]))
+					else: fc_arr[cfc] = rsa.decrypt(fl, enc_keys[1])
+					fp.write(rsa.decrypt(fl, enc_keys[1]))
+				c.send('ack')
+				c.recv(3)
+				fp.seek(0,0)
+				cfc = cfc + 1
+			time.sleep(BEDTIME)
+			try: c.send('ack')
+			except socket.error:
+				for fp in fp_arr: fp.close()
+				c.close()
+				s.close()
+				exit()
+			c.recv(3)
+			cfc = 0
+			for fp in fp_arr:
+				try:
+					fp = open(fn_arr[cfc], 'r+')
+					efp = open('.e' + str(cfc), 'w+')
+					fp_len = len(fp.read())
+					fp.seek(0)
+					if fp_len > 64:
+						rsa.bigfile.encrypt_bigfile(fp, efp, o_pub)
+						efp.seek(0)
+						c.send(efp.read() + header)
+						efp.close()
+						os.remove('.e' + str(cfc))
+					else:
+						c.send(rsa.encrypt(fp.read(), o_pub) + header)
+				except socket.error as e:
+					for fp in fp_arr: fp.close()
+					c.close()
+					s.close()
+					exit()
+				fp.seek(0,0)
+				cfc = cfc + 1
+	except KeyboardInterrupt:
+		c.send('die')
+		for fp in fp_arr: fp.close()
+		c.close()
+		s.close()
+		exit()
+else:
+	s.connect((socket.gethostbyname(sys.argv[1]), 5068))
+	pwd = raw_input('Password: ')
+	s.send(pwd)
+	if s.recv(3) == 'err':
+		s.close()
+		print "Error: incorrect password."
+		exit()
+	o_pub = s.recv(256)
+	print o_pub.split(header)
+	o_pub = rsa.PublicKey(int(o_pub.split(header)[-2].split('s')[0]), int(o_pub.split(header)[-2].split('s')[1]))
+	s.send(str(enc_keys[0].n) + 's' + str(enc_keys[0].e) + header)
+	print 'hi'
+	try:
+		while True:
+			cfc = 0
+			for fp in fp_arr:
+				try:
+					fp = open(fn_arr[cfc], 'r+')
+					efp = open('.e' + str(cfc), 'w+')
+					fp_len = len(fp.read())
+					fp.seek(0)
+					if fp_len > 64:
+						rsa.bigfile.encrypt_bigfile(fp, efp, o_pub)
+						efp.seek(0)
+						s.send(efp.read() + header)
+						efp.close()
+						os.remove('.e' + str(cfc))
+					else:
+						s.send(rsa.encrypt(fp.read(), o_pub) + header)
+				except socket.error as e:
+					for fp in fp_arr: fp.close()
+					s.close()
+					exit()
+				fp.seek(0,0)
+				cfc = cfc + 1
+				s.recv(3)
+				s.send('ack')
+			time.sleep(BEDTIME)
+			if s.recv(3) == 'die':
+				for fp in fp_arr: fp.close()
+				s.close()
+				exit()
+			s.send('ack')
+			cfc = 0
+			for fp in fp_arr:
+				fc = s.recv(2147483647/2)#Yowza, am I right?
+				fl = fc.split(header)[-2]
+				fpl = len(fl)
+				if fpl > 64:
+					dfp = open('.d' + str(cfc), 'w+')
+					dfp.write(fl)
+					dfp.seek(0)
+					rsa.bigfile.decrypt_bigfile(dfp, fp, enc_keys[1])
+					fp.seek(0)
+					if cfc > len(fc_arr) - 1: fc_arr.append(fp.read())
+					else: fc_arr[cfc] = fp.read()
+					fp.seek(0)
+					dfp.close()
+					os.remove('.d' + str(cfc))
+				else:
+					fp.truncate()
+					if cfc > len(fc_arr) - 1: fc_arr.append(rsa.decrypt(fl, enc_keys[1]))
+					else: fc_arr[cfc] = rsa.decrypt(fl, enc_keys[1])
+					fp.write(rsa.decrypt(fl, enc_keys[1]))
+				fp.seek(0,0)
+				cfc = cfc + 1
+	except KeyboardInterrupt:
+		for fp in fp_arr: fp.close()
+		s.close()
+		exit()
