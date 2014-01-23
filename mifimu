@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+#NOTE: mifimu requires many ports to be open, all within the 46000+ range.
+import sys, socket, thread, time
+BASE_PORT = 46000
+sfn_arr = sys.argv[-1].split(',')
+soc_arr = []	#Server or client boolean array
+csock_arr = []	#Connecting socket array
+cssock_arr = []	#Listener's content socket
+ssock_arr = []	#Listening socket array
+daccpt_arr = []	#Dummy accept function done array
+lidone_arr = [] #Listener code done array
+condone_arr = []#Connection code done array
+cfc = 0
+header = '\1\1\2\5--~~BIFIMU~~header--bifimu~~HEADER~~\5\2\1\1'
+fp_arr = []     #file pointer array
+fn_arr = sys.argv[3:]   #file name array
+fclist_arr = [[]]     #file contents array
+BEDTIME = int(sys.argv[2])
+
+for i in range(0, len(sfn_arr)):
+	csock_arr.append(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+	ssock_arr.append(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+	ssock_arr[i].setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	ssock_arr[i].bind(('', BASE_PORT + i))
+	cssock_arr.append('')	#Just a dummy fill
+	soc_arr.append(False)
+	daccept_arr.append(False)
+	lidone_arr.append(False)
+	condone_arr.append(False)
+def try_conn(arr_index):
+	while True:
+		try:
+			csock_arr[arr_index].connect((socket.gethostbyname(sfn_arr[arr_index]), BASE_PORT + arr_index))
+		except socket.gaierror:
+			time.sleep(2)
+			continue
+		else:
+			soc_arr[arr_index] = True
+			exit()
+def wait_listen(arr_index):
+	def dummy_accept():
+		cssock[arr_index], random_crud = ssock_arr[arr_index].accept()
+		daccpt_arr[arr_index] = True
+	ssock_arr[arr_index].setsockopts(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	ssock_arr[arr_index].listen(5)
+	thread.start_new(dummy_accept, ())
+	while True:
+		if (soc_arr[arr_index] == True) or (daccpt_arr[arr_index] == True):
+			lidone_arr[arr_index] = True
+			exit()
+		time.sleep(2)
+def main_code(arr_index):
+		if soc_arr[arr_index] == False:
+			try:
+				while True:
+					cfc = 0
+					for fp in fp_arr:
+						fc = cssock_arr[arr_index].recv(2147483647/2)
+						fl = fc.split(header)[-2]
+						fp.truncate()
+						if cfc > len(fc_arr) - 1: fc_arr.append(fl)
+						else: fc_arr[cfc] = fl
+						fp.write(fl)
+						fp.seek(0,0)
+						cfc = cfc + 1
+					time.sleep(BEDTIME)
+					try: cssock_arr[arr_index].send('ack')
+					except socket.error:
+							for fp in fp_arr:
+								fp.close()
+							cssock_arr[arr_index].close()
+							ssock_arr[arr_index].close()
+							exit()
+					cssock_arr[arr_index].recv(3)
+					cfc = 0
+					for fp in fp_arr:
+						fp = open(fn_arr[cfc], 'r+')
+						cssock_arr[arr_index].send(fp.read() + header)
+						fp.seek(0,0)
+						cfc = cfc + 1
+			except KeyboardInterrupt:
+				cssock_arr[arr_index].send('die')
+				for fp in fp_arr:
+					fp.close()
+				cssock_arr[arr_index].close()
+				ssock_arr[arr_index].close()
+				exit()
+		else:
+			try:
+				while True:
+					cfc = 0
+					for fp in fp_arr:
+						fp = open(fn_arr[cfc], 'r+')
+						ssock_arr[arr_index].send(fp.read() + header)
+						fp.seek(0,0)
+						cfc = cfc + 1
+					time.sleep(BEDTIME)
+					try: ssock_arr[arr_index].send('ack')
+					except socket.error:
+						for fp in fp_arr:
+							fp.close()
+						ssock_arr[arr_index].close()
+						exit()
+					ssock_arr[arr_index].recv(3)
+					for fp in fp_arr:
+						fc = ssock_arr[arr_index].recv(2147483647/2)
+						fl = fc.split(header)[-2]
+						fp.truncate()
+						if cfc > len(fc_arr) - 1: fc_arr.append(fl)
+						else: fc_arr[cfc] = fl
+						fp.write(fl)
+						fp.seek(0,0)
+						cfc = cfc + 1
+			except KeyboardInterrupt:
+				cssock_arr[arr_index].send('die')
+				for fp in fp_arr:
+					fp.close()
+				ssock_arr[arr_index].close()
+				exit()
+for i in range(0, len(soc_arr)):
+	thread.start_new(try_conn, (i))
+	thread.start_new(wait_listen, (i))
+while True:
+	for i in range(0, len(soc_arr)):
+		if lidone_arr[i] == True or soc_arr[i] == True:
+			thread.start_new(main_code, (i))
+	time.sleep(1)
