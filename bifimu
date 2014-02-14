@@ -15,22 +15,17 @@ if sys.argv[1] == '-l':
 	c, caddr = s.accept()
 	try:
 		while True:
-			print 'what??!?!?!?!'
 			cfc = 0
 			for fp in fp_arr:
 				msg = ''
 				slen = int(c.recv(7 + len(header)).split(header)[-2])
 				c.send('ack')
-				print '2'
 				if slen == 1:
 					msg = c.recv(4096 + len(header)).split(header)[-2]
-					print 'test1'
-					print 'hi'
 				else:
 					msg = ''
 					for i in range(0,slen - 1):
 						msg = msg + c.recv(4096)
-					print 'hi'
 					msg = msg + c.recv(4096 + len(header)).split(header)[-2]
 				c.send('ack')
 				fp.truncate()
@@ -78,7 +73,6 @@ if sys.argv[1] == '-l':
 		exit()
 else:
 	s.connect((socket.gethostbyname(sys.argv[1]), 5068))
-	print 'hi'
 	try:
 		while True:
 			cfc = 0
@@ -90,10 +84,8 @@ else:
 				        slen = mlen / 4096
 				else:
 				        slen = (mlen / 4096) + 1
-				print '2'
 				s.send(str(slen) + header)
 				s.recv(3)
-				print '3'
 				if slen == 1:
 				        s.send(msg + header)
 				else:
@@ -114,7 +106,6 @@ else:
 			for fp in fp_arr:
 				msg = ''
 				slen = int(s.recv(7 + len(header)).split(header)[-2])
-				print slen
 				s.send('ack')
 				if slen == 1:
 					msg = s.recv(4096 + len(header)).split(header)[-2]
