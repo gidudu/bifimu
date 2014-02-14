@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os, sys, time, socket
 cfc = 0
-header = '\1\1\2\5'
+header = header = '\1\1\2\5--~~BIFIMU~~header--bifimu~~HEADER~~\5\2\1\1'
 fp_arr = []     #file pointer array
 fn_arr = sys.argv[3:]   #file name array
 fc_arr = []     #file contents array
