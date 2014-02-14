@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import os, sys, time, socket
 cfc = 0
 header = '\1\1\2\5'
@@ -13,24 +13,33 @@ if sys.argv[1] == '-l':
 	s.bind(('', 5068))
 	s.listen(5)
 	c, caddr = s.accept()
-	pwd = raw_input("Please enter your desired password: ");
-	if cpass != pwd:
-		c.send("err")
-		c.close(); s.close()
-		exit()
-	else: c.send("ack")
 	try:
 		while True:
+			print 'what??!?!?!?!'
 			cfc = 0
 			for fp in fp_arr:
-				fc = c.recv(2147483647/2)
-				fl = fc.split(header)[-2]
+				msg = ''
+				slen = int(c.recv(7 + len(header)).split(header)[-2])
+				c.send('ack')
+				print '2'
+				if slen == 1:
+					msg = c.recv(4096 + len(header)).split(header)[-2]
+					print 'test1'
+					print 'hi'
+				else:
+					msg = ''
+					for i in range(0,slen - 1):
+						msg = msg + c.recv(4096)
+					print 'hi'
+					msg = msg + c.recv(4096 + len(header)).split(header)[-2]
+				c.send('ack')
 				fp.truncate()
-				if cfc > len(fc_arr) - 1: fc_arr.append(fl)
-				else: fc_arr[cfc] = fl
-				fp.write(fl)
+				if cfc > len(fc_arr) - 1: fc_arr.append(msg)
+				else: fc_arr[cfc] = msg
+				fp.write(msg)
 				fp.seek(0,0)
 				cfc = cfc + 1
+			print '3'
 			time.sleep(BEDTIME)
 			try: c.send('ack')
 			except socket.error:
@@ -43,7 +52,21 @@ if sys.argv[1] == '-l':
 			cfc = 0
 			for fp in fp_arr:
 				fp = open(fn_arr[cfc], 'r+')
-				c.send(fp.read() + header)
+				msg = fp.read()
+				mlen = len(msg)
+				if mlen % 4096 == 0:
+				        slen = mlen / 4096
+				else:
+				        slen = (mlen / 4096) + 1
+				c.send(str(slen) + header)
+				c.recv(3)
+				if slen == 1:
+				        c.send(msg + header)
+				else:
+				        for i in range(0,slen - 1):
+				                c.send(msg[4096*i:4096*(i+1)])
+				        c.send(msg[4096*(slen - 1):] + header)
+				c.recv(3)
 				fp.seek(0,0)
 				cfc = cfc + 1
 	except KeyboardInterrupt:
@@ -54,19 +77,30 @@ if sys.argv[1] == '-l':
 		s.close()
 		exit()
 else:
-	pwd = raw_input('Password: ')
 	s.connect((socket.gethostbyname(sys.argv[1]), 5068))
-	s.send(pwd)
-	if s.recv(3) == 'err':
-		s.close()
-		print "Error: incorrect password."
-		exit()
+	print 'hi'
 	try:
 		while True:
 			cfc = 0
 			for fp in fp_arr:
 				fp = open(fn_arr[cfc], 'r+')
-				s.send(fp.read() + header)
+				msg = fp.read()
+				mlen = len(msg)
+				if mlen % 4096 == 0:
+				        slen = mlen / 4096
+				else:
+				        slen = (mlen / 4096) + 1
+				print '2'
+				s.send(str(slen) + header)
+				s.recv(3)
+				print '3'
+				if slen == 1:
+				        s.send(msg + header)
+				else:
+				        for i in range(0,slen - 1):
+				                s.send(msg[4096*i:4096*(i+1)])
+				        s.send(msg[4096*(slen - 1):] + header)
+				s.recv(3)
 				fp.seek(0,0)
 				cfc = cfc + 1
 			time.sleep(BEDTIME)
@@ -78,11 +112,22 @@ else:
 			s.send('ack')
 			cfc = 0
 			for fp in fp_arr:
-				fc = s.recv(2147483647/2)
+				msg = ''
+				slen = int(s.recv(7 + len(header)).split(header)[-2])
+				print slen
+				s.send('ack')
+				if slen == 1:
+					msg = s.recv(4096 + len(header)).split(header)[-2]
+				else:
+					msg = ''
+					for i in range(0,slen - 1):
+						msg = msg + s.recv(4096)
+					msg = msg + s.recv(4096 + len(header)).split(header)[-2]
+				s.send('ack')
 				fp.truncate()
-				if cfc > len(fc_arr) - 1: fc_arr.append(fl)
-				else: fc_arr[cfc] = fl
-				fp.write(fl)
+				if cfc > len(fc_arr) - 1: fc_arr.append(msg)
+				else: fc_arr[cfc] = msg
+				fp.write(msg)
 				fp.seek(0,0)
 				cfc = cfc + 1
 	except KeyboardInterrupt:
